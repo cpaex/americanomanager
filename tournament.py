@@ -5,36 +5,44 @@ from typing import List, Dict, Tuple
 import random
 
 class Player:
-    def __init__(self, name: str, ranking: int):
+    def __init__(self, name: str, ranking: int, gender: str, id: str = None):
         self.name = name
         self.ranking = ranking
+        self.gender = gender  # 'M' for male, 'F' for female
+        self.id = id  # Add ID field for database reference
+
+    def __str__(self):
+        return f"{self.name} (Ranking: {self.ranking})"
 
 class Team:
-    def __init__(self, player1: Player, player2: Player):
-        self.players = [player1, player2]
-        self.ranking = (player1.ranking + player2.ranking) / 2
+    def __init__(self, player1: Player, player2: Player, id: str = None):
+        self.player1 = player1
+        self.player2 = player2
+        self.id = id  # Add ID field for database reference
+        self.average_ranking = (player1.ranking + player2.ranking) / 2
+        self.ranking = self.average_ranking  # For backward compatibility
+        self.name = f"{player1.name} & {player2.name}"
         self.points = 0
         self.matches_played = 0
         self.matches_won = 0
 
     def __str__(self):
-        return f"{self.players[0].name} & {self.players[1].name}"
+        return f"{self.name} (Avg Ranking: {self.average_ranking:.1f})"
 
 class Match:
-    def __init__(self, team1: Team, team2: Team, court: int, start_time: datetime):
+    def __init__(self, team1: Team, team2: Team, court: int, id: str = None):
         self.team1 = team1
         self.team2 = team2
         self.court = court
-        self.start_time = start_time
-        self.end_time = start_time + timedelta(hours=1)
+        self.id = id  # Add ID field for database reference
         self.winner = None
-        self.score = None
+        self.score = 0
 
-    def play_match(self, winner: Team):
-        self.winner = winner
-        self.score = self.calculate_score()
-        winner.matches_won += 1
-        winner.points += self.score
+    def play_match(self, winning_team: Team):
+        self.winner = winning_team
+        self.score = 1.0  # Base score for winning
+        winning_team.matches_won += 1
+        winning_team.points += self.score
         self.team1.matches_played += 1
         self.team2.matches_played += 1
 
@@ -54,12 +62,13 @@ class Match:
         return base_points
 
 class Tournament:
-    def __init__(self, name: str, num_courts: int = 8):
+    def __init__(self, name: str, num_courts: int, id: str = None):
         self.name = name
         self.num_courts = num_courts
-        self.teams: List[Team] = []
-        self.matches: List[Match] = []
-        self.schedule: Dict[datetime, List[Match]] = {}
+        self.id = id  # Add ID field for database reference
+        self.teams = []
+        self.matches = []
+        self.schedule = {}
         self.start_time = None
         self.end_time = None
 
@@ -124,7 +133,7 @@ class Tournament:
             for match in round_matches:
                 if available_courts:
                     court = available_courts.pop(0)
-                    new_match = Match(match[0], match[1], court, current_time)
+                    new_match = Match(match[0], match[1], court, None)
                     current_round.append(new_match)
                     self.matches.append(new_match)
             
